@@ -549,7 +549,7 @@ class _DashboardPageState extends State<DashboardPage>
         borderRadius: BorderRadius.circular(16),
         child: GlassyContainer(
           borderRadius: BorderRadius.circular(16),
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           tintColor: const Color(0xFF2E6DF9),
           subtleBorder: true,
           child: Column(
@@ -557,12 +557,12 @@ class _DashboardPageState extends State<DashboardPage>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: Colors.white, size: 18),
+                child: Icon(icon, color: Colors.white, size: 16),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,16 +571,16 @@ class _DashboardPageState extends State<DashboardPage>
                     value,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
                     title,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
-                      fontSize: 11,
+                      fontSize: 10.5,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
