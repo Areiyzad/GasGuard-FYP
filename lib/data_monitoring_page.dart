@@ -219,7 +219,7 @@ class _DataMonitoringPageState extends State<DataMonitoringPage>
             text: value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
             children: [

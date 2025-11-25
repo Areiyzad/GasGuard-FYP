@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/glassy.dart';
 import 'services/settings_service.dart';
 import 'services/gas_data_service.dart';
@@ -55,6 +56,8 @@ class _DashboardPageState extends State<DashboardPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildSupabaseDebugBanner(),
+          const SizedBox(height: 12),
           _buildWelcomeSection(),
           const SizedBox(height: 24),
           _buildStatusCard(),
@@ -304,6 +307,65 @@ class _DashboardPageState extends State<DashboardPage>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSupabaseDebugBanner() {
+    final supabase = Supabase.instance.client;
+    final isConnected = supabase.auth.currentSession != null;
+    
+    return GlassyContainer(
+      borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      tintColor: isConnected ? Colors.green : Colors.blue,
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: isConnected ? Colors.green : Colors.blue,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (isConnected ? Colors.green : Colors.blue).withOpacity(0.5),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '🗄️ Supabase Database',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isConnected ? 'Connected & Authenticated' : 'Connected (Anonymous)',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            isConnected ? Icons.check_circle : Icons.cloud_done,
+            color: isConnected ? Colors.green : Colors.blue,
+            size: 20,
+          ),
+        ],
       ),
     );
   }

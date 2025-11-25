@@ -4,6 +4,7 @@ import 'widgets/glassy.dart';
 import 'theme_mode.dart';
 
 // Import the pages you want to navigate between
+import 'auth_page.dart';
 import 'dashboardpage.dart';
 import 'data_monitoring_page.dart';
 import 'alertreminder.dart';
@@ -13,10 +14,27 @@ import 'settings_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: 'https://YOUR_PROJECT_ID.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxcWtnb3d6bmd3eWZjZ2J2cWppIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NjIwNjY5MDMsImV4cCI6MjA3NzY0MjkwM30.W1hKdMml6wW2jC7mVh3hxoEyHXFIZ3vieQD3EfQTT64',
-  );
+  
+  print('🚀 Initializing Supabase...');
+  try {
+    await Supabase.initialize(
+      url: 'https://wqqkgowzngwyfcgbvqji.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxcWtnb3d6bmd3eWZjZ2J2cWppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwNjY5MDMsImV4cCI6MjA3NzY0MjkwM30.W1hKdMml6wW2jC7mVh3hxoEyHXFIZ3vieQD3EfQTT64',
+    );
+    print('✅ Supabase initialized successfully!');
+    print('📡 Connected to: https://wqqkgowzngwyfcgbvqji.supabase.co');
+    
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser != null) {
+      print('✅ User already signed in');
+      print('👤 User ID: ${currentUser.id}');
+    } else {
+      print('⚠️ No user signed in - will show auth page');
+    }
+  } catch (e) {
+    print('❌ Supabase initialization failed: $e');
+  }
+  
   runApp(const GasGuardApp());
 }
 
@@ -112,7 +130,32 @@ class GasGuardApp extends StatelessWidget {
           darkTheme: _buildDarkTheme(),
           themeMode: mode,
           builder: (context, child) => GlassyBackground(child: child ?? const SizedBox.shrink()),
-          home: const MainNavigator(),
+          home: StreamBuilder<AuthState>(
+            stream: Supabase.instance.client.auth.onAuthStateChange,
+            builder: (context, snapshot) {
+              // Show loading while checking auth
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                );
+              }
+              
+              // Check if user is signed in
+              final session = snapshot.hasData ? snapshot.data!.session : null;
+              
+              if (session != null) {
+                return const MainNavigator();
+              } else {
+                return const AuthPage();
+              }
+            },
+          ),
+          routes: {
+            '/home': (context) => const MainNavigator(),
+            '/auth': (context) => const AuthPage(),
+          },
           debugShowCheckedModeBanner: false,
         );
       },
