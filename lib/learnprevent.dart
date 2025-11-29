@@ -970,23 +970,3 @@ class _LearnPreventPageState extends State<LearnPreventPage>
   }
 }
 
-// New: small pill chip used in hero banner
-class _InfoPill extends StatelessWidget {
-  final String text;
-  const _InfoPill({required this.text});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withOpacity(0.35)),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
