@@ -45,33 +45,45 @@ class GasGuardApp extends StatelessWidget {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E3A8A), brightness: Brightness.light),
+      colorScheme: const ColorScheme.light(
+        primary: Color(0xFF2196F3), // blue accent
+        onPrimary: Colors.white,
+        secondary: Color(0xFF2C2C2C), // dark gray for accent elements
+        onSecondary: Colors.white,
+        surface: Color(0xFFFFFFFF), // white cards
+        onSurface: Color(0xFF2C2C2C), // dark text on white cards
+        background: Color(0xFFF5F5F5), // light gray background
+        onBackground: Color(0xFF2C2C2C), // dark text
+      ),
       scaffoldBackgroundColor: Colors.transparent,
-      textTheme: TextTheme(
-        headlineSmall: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-        titleLarge: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.82)),
-        bodyMedium: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.78)),
-        bodySmall: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.72)),
+      textTheme: const TextTheme(
+        headlineSmall: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2C2C2C)), // dark text like "Hello, Rocky"
+        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF2C2C2C)), // dark headings
+        titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF424242)), // medium dark
+        bodyMedium: TextStyle(fontSize: 15, color: Color(0xFF757575)), // medium gray
+        bodySmall: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)), // light gray for subtitles
       ),
       cardTheme: CardTheme(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: Colors.white.withOpacity(0.10),
-        elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        color: Colors.white, // pure white cards
+        elevation: 1,
+        shadowColor: const Color(0xFF000000).withOpacity(0.08),
         surfaceTintColor: Colors.transparent,
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: Colors.white.withOpacity(0.10),
+        backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.white.withOpacity(0.22))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20), 
+          side: BorderSide.none,
+        ),
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+        foregroundColor: Color(0xFF2C2C2C), // dark text
+        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF2C2C2C)),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.transparent,
@@ -84,33 +96,39 @@ class GasGuardApp extends StatelessWidget {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0B2C63), brightness: Brightness.dark),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF0A84FF), 
+        brightness: Brightness.dark,
+      ),
       scaffoldBackgroundColor: Colors.transparent,
-      textTheme: TextTheme(
-        headlineSmall: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-        titleLarge: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.88)),
-        bodyMedium: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.84)),
-        bodySmall: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.78)),
+      textTheme: const TextTheme(
+        headlineSmall: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFFFFFFF)),
+        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFFF0F7FF)),
+        titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFFE3F2FD)),
+        bodyMedium: TextStyle(fontSize: 15, color: Color(0xFFBBDEFB)),
+        bodySmall: TextStyle(fontSize: 13, color: Color(0xFF90CAF9)),
       ),
-      cardTheme: CardTheme(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: Colors.white.withOpacity(0.08),
+      cardTheme: const CardTheme(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(24))),
+        color: Color(0xFF1A1A1A),
         elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.30),
+        shadowColor: Colors.black,
         surfaceTintColor: Colors.transparent,
       ),
-      dialogTheme: DialogTheme(
-        backgroundColor: Colors.white.withOpacity(0.08),
+      dialogTheme: const DialogTheme(
+        backgroundColor: Color(0xFF1A1A1A),
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.white.withOpacity(0.18))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(24)), 
+          side: BorderSide(color: Color(0xFF2563EB), width: 0.5),
+        ),
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.transparent,

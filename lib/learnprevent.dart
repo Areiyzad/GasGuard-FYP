@@ -36,37 +36,62 @@ class _LearnPreventPageState extends State<LearnPreventPage>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header section matching "Choose your interests" style
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : const Color(0xFF2C2C2C)),
+                  onPressed: () {},
+                ),
+                if (_selectedGuide == null)
+                  TextButton(
+                    onPressed: () {},
+                    child: Text(
+                      'Skip',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : const Color(0xFF757575),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
             FadeTransition(
               opacity: _fadeController,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Learn & Prevent',
+                    _selectedGuide == null ? 'Learn About\nGas Safety' : 'Safety Guide',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          fontSize: 34,
+                          height: 1.2,
                         ),
                   ),
+                  const SizedBox(height: 8),
                   Text(
-                    'Gas safety education and emergency protocols',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white70,
+                    _selectedGuide == null 
+                        ? 'Choose topics to learn about gas safety and prevention'
+                        : 'Essential gas safety information',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontSize: 16,
                         ),
                   ),
-                  const SizedBox(height: 24.0),
+                  const SizedBox(height: 32.0),
                 ],
               ),
             ),
-            // New: Hero banner
-            _buildHeroBanner(),
-            const SizedBox(height: 16.0),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
               transitionBuilder: (child, animation) {
@@ -79,197 +104,192 @@ class _LearnPreventPageState extends State<LearnPreventPage>
                   ? _buildGuideMenu()
                   : _buildGuideContent(_selectedGuide!),
             ),
+            if (_selectedGuide == null) ...[
+              const SizedBox(height: 32),
+              // "NEXT" button like in the reference
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF5B7FDF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'NEXT',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  // New: Attractive hero banner with quick facts chips
-  Widget _buildHeroBanner() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 600),
-      builder: (context, value, child) {
-        return Transform.scale(scale: value, child: Opacity(opacity: value, child: child));
-      },
-      child: GlassyContainer(
-        borderRadius: BorderRadius.circular(20),
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.health_and_safety, color: Colors.white, size: 36),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Stay Safe, Stay Aware',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Learn how gas behaves, how to ventilate, and what to do in emergencies.',
-                    style: TextStyle(color: Colors.white.withOpacity(0.95), height: 1.3),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: const [
-                      _InfoPill(text: 'LPG sinks ↓'),
-                      _InfoPill(text: 'NG rises ↑'),
-                      _InfoPill(text: 'CO is odorless'),
-                      _InfoPill(text: 'Test monthly'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildGuideMenu() {
-    return Column(
+    return GridView.count(
       key: const ValueKey('menu'),
+      crossAxisCount: 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 0.95,
       children: [
-        _buildAnimatedMenuCard(
+        _buildTopicButton(
           delay: 0,
-          title: 'Gas Safety Guide',
-          subtitle: 'Learn best practices and prevention',
-          icon: Icons.book,
-          gradient: LinearGradient(
-            colors: [const Color(0xFF3B82F6), const Color(0xFF1E40AF)],
-            end: Alignment.bottomRight,
-          ),
+          title: 'Safety Guide',
+          icon: Icons.shield_outlined,
+          isSelected: false,
           onTap: () => setState(() => _selectedGuide = 'safety'),
         ),
-        const SizedBox(height: 16.0),
-        _buildAnimatedMenuCard(
-          delay: 100,
-          title: 'Emergency Steps',
-          subtitle: 'What to do when alarm sounds',
-          icon: Icons.warning_amber_rounded,
-          gradient: LinearGradient(
-            colors: [const Color(0xFFEF4444), const Color(0xFFDC2626)],
-            end: Alignment.bottomRight,
-          ),
+        _buildTopicButton(
+          delay: 50,
+          title: 'Emergency',
+          icon: Icons.emergency_outlined,
+          isSelected: false,
           onTap: () => setState(() => _selectedGuide = 'emergency'),
         ),
-        const SizedBox(height: 16.0),
-        // New topics
-        _buildAnimatedMenuCard(
-          delay: 200,
-          title: 'Gas Types & Behavior',
-          subtitle: 'NG, LPG and CO differences',
-          icon: Icons.category,
-          gradient: LinearGradient(
-            colors: [const Color(0xFF10B981), const Color(0xFF0EA5E9)],
-            end: Alignment.bottomRight,
-          ),
+        _buildTopicButton(
+          delay: 100,
+          title: 'Gas Types',
+          icon: Icons.science_outlined,
+          isSelected: false,
           onTap: () => setState(() => _selectedGuide = 'types'),
         ),
-        const SizedBox(height: 16.0),
-        _buildAnimatedMenuCard(
-          delay: 300,
-          title: 'Ventilation Basics',
-          subtitle: 'Airflow and placement tips',
+        _buildTopicButton(
+          delay: 150,
+          title: 'Ventilation',
           icon: Icons.air,
-          gradient: LinearGradient(
-            colors: [const Color(0xFFF59E0B), const Color(0xFFEAB308)],
-            end: Alignment.bottomRight,
-          ),
+          isSelected: false,
           onTap: () => setState(() => _selectedGuide = 'ventilation'),
         ),
-        const SizedBox(height: 16.0),
-        _buildAnimatedMenuCard(
-          delay: 400,
-          title: 'Storage & Handling',
-          subtitle: 'Cylinders and safe practices',
-          icon: Icons.inventory_2,
-          gradient: LinearGradient(
-            colors: [const Color(0xFF8B5CF6), const Color(0xFF7C3AED)],
-            end: Alignment.bottomRight,
-          ),
+        _buildTopicButton(
+          delay: 200,
+          title: 'Storage',
+          icon: Icons.inventory_2_outlined,
+          isSelected: false,
           onTap: () => setState(() => _selectedGuide = 'storage'),
         ),
-        const SizedBox(height: 16.0),
-        _buildAnimatedMenuCard(
-          delay: 500,
-          title: 'Myths vs Facts',
-          subtitle: 'Clear common misconceptions',
-          icon: Icons.fact_check,
-          gradient: LinearGradient(
-            colors: [const Color(0xFF06B6D4), const Color(0xFF0EA5E9)],
-            end: Alignment.bottomRight,
-          ),
+        _buildTopicButton(
+          delay: 250,
+          title: 'Myths',
+          icon: Icons.lightbulb_outline,
+          isSelected: false,
           onTap: () => setState(() => _selectedGuide = 'myths'),
+        ),
+        _buildTopicButton(
+          delay: 300,
+          title: 'Detection',
+          icon: Icons.sensors,
+          isSelected: false,
+          onTap: () => setState(() => _selectedGuide = 'safety'),
+        ),
+        _buildTopicButton(
+          delay: 350,
+          title: 'Testing',
+          icon: Icons.fact_check_outlined,
+          isSelected: false,
+          onTap: () => setState(() => _selectedGuide = 'safety'),
+        ),
+        _buildTopicButton(
+          delay: 400,
+          title: 'Maintenance',
+          icon: Icons.build_outlined,
+          isSelected: false,
+          onTap: () => setState(() => _selectedGuide = 'safety'),
         ),
       ],
     );
   }
 
-  Widget _buildAnimatedMenuCard({
+  Widget _buildTopicButton({
     required int delay,
     required String title,
-    required String subtitle,
     required IconData icon,
-    required Gradient gradient,
+    required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 600 + delay),
+      duration: Duration(milliseconds: 400 + delay),
       builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, 30 * (1 - value)),
-          child: Opacity(
-            opacity: value,
-            child: child,
-          ),
+        return Transform.scale(
+          scale: 0.8 + (0.2 * value),
+          child: Opacity(opacity: value, child: child),
         );
       },
-      child: GlassyContainer(
-        borderRadius: BorderRadius.circular(12.0),
-        padding: const EdgeInsets.all(24.0),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12.0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected 
+                ? const Color(0xFF5B7FDF) 
+                : isDark ? const Color(0xFF2C2C2C) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? Colors.transparent : const Color(0xFFE0E0E0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  color: isSelected 
+                      ? Colors.white.withOpacity(0.2)
+                      : const Color(0xFF5B7FDF).withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.all(12),
-                child: Icon(icon, size: 32.0, color: Colors.white),
-              ),
-              const SizedBox(height: 12.0),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: isSelected 
+                      ? Colors.white 
+                      : const Color(0xFF5B7FDF),
                 ),
               ),
-              const SizedBox(height: 4.0),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14.0,
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected 
+                        ? Colors.white 
+                        : isDark ? Colors.white : const Color(0xFF2C2C2C),
+                  ),
                 ),
               ),
             ],
@@ -278,6 +298,8 @@ class _LearnPreventPageState extends State<LearnPreventPage>
       ),
     );
   }
+
+
 
   Widget _buildGuideContent(String guideType) {
     return Column(

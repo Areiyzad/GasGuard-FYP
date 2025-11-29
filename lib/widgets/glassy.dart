@@ -10,40 +10,30 @@ class GlassyBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Adaptive layered blue gradient background
+        // Background with blue accent
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: Theme.of(context).brightness == Brightness.dark
                   ? const [
-                      Color(0xFF041025), // darker apex
-                      Color(0xFF062037), // deep slate blue
-                      Color(0xFF072B4F), // ocean midnight
-                      Color(0xFF052038), // base shadow
+                      Color(0xFF000000), // pure black
+                      Color(0xFF0A1929), // dark blue-black
+                      Color(0xFF1E3A5F), // deep blue
+                      Color(0xFF0D1B2A), // dark blue-black
                     ]
                   : const [
-                      Color(0xFF0A1E46), // deep navy top
-                      Color(0xFF0D2F73), // mid cobalt
-                      Color(0xFF0F3C8F), // rich royal
-                      Color(0xFF0B2C63), // base blend
+                      Color(0xFFF5F5F5), // light gray background
+                      Color(0xFFEEEEEE), // slightly darker gray
+                      Color(0xFFE8E8E8), // medium gray
+                      Color(0xFFF0F0F0), // light gray
                     ],
               stops: const [0.0, 0.35, 0.70, 1.0],
             ),
           ),
         ),
-        // Subtle radial highlights for depth
-        Positioned(
-          top: -80,
-          left: -60,
-          child: _GlowCircle(color: const Color(0xFFFFFFFF).withOpacity(0.25), size: 220),
-        ),
-        Positioned(
-          bottom: -100,
-          right: -80,
-          child: _GlowCircle(color: const Color(0xFFFFFFFF).withOpacity(0.18), size: 280),
-        ),
+        // No glow effects for clean professional look
         // App content on top
         child,
       ],
@@ -51,27 +41,7 @@ class GlassyBackground extends StatelessWidget {
   }
 }
 
-class _GlowCircle extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _GlowCircle({required this.color, required this.size});
 
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [color, Colors.transparent],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class GlassyContainer extends StatelessWidget {
   final Widget child;
@@ -95,39 +65,44 @@ class GlassyContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = borderRadius ?? BorderRadius.circular(16);
-    // Base white glass; if tint provided, blend toward tint
-    final base1 = (tintColor ?? Colors.white).withOpacity(opacity + 0.10);
-    final base2 = (tintColor ?? Colors.white).withOpacity(opacity + 0.02);
-    return ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: Border.all(
-              color: Colors.white.withOpacity(subtleBorder ? 0.12 : 0.22),
-              width: 1,
-            ),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [base1, base2],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 40,
-                spreadRadius: -6,
-                offset: const Offset(0, 20),
-              ),
-            ],
-          ),
-          child: child,
+    final radius = borderRadius ?? BorderRadius.circular(24);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Use tintColor for accent cards (mint green), otherwise default cards
+    final bool isAccentCard = tintColor != null;
+    
+    Color cardColor;
+    if (isAccentCard) {
+      cardColor = isDark 
+        ? const Color(0xFF1E3A5F) // deep blue for dark mode accent
+        : const Color(0xFF2C2C2C); // dark gray for accent cards (like Smart Light card)
+    } else {
+      cardColor = isDark
+        ? const Color(0xFF1A1A1A) // very dark gray card
+        : const Color(0xFFFFFFFF); // pure white cards
+    }
+    
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        color: cardColor,
+        border: isAccentCard ? null : Border.all(
+          color: isDark 
+            ? const Color(0xFF2563EB).withOpacity(0.3) // blue border for dark
+            : const Color(0xFFE0E0E0), // subtle gray border
+          width: 0.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      child: child,
     );
   }
 }

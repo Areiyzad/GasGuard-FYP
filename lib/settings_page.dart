@@ -405,12 +405,22 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
               children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.orange[700]),
                 const SizedBox(width: 8),
-                Text(
-                  'Minimum Threshold',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                Expanded(
+                  child: Text(
+                    'Minimum Threshold',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showManualThresholdDialog(isMinimum: true),
+                  icon: const Icon(Icons.edit, size: 16, color: Colors.orangeAccent),
+                  label: const Text(
+                    'Adjust',
+                    style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
                   ),
                 ),
               ],
@@ -440,12 +450,22 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
               children: [
                 Icon(Icons.dangerous, color: Colors.red[700]),
                 const SizedBox(width: 8),
-                Text(
-                  'Maximum Threshold',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                Expanded(
+                  child: Text(
+                    'Maximum Threshold',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _showManualThresholdDialog(isMinimum: false),
+                  icon: const Icon(Icons.edit, size: 16, color: Colors.redAccent),
+                  label: const Text(
+                    'Adjust',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 12),
                   ),
                 ),
               ],
@@ -456,10 +476,10 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
               style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
             Slider(
-              value: _currentSettings.maxThreshold,
+              value: _currentSettings.maxThreshold.clamp(200, 500),
               min: 200,
-              max: 1000,
-              divisions: 80,
+              max: 500,
+              divisions: 60,
               label: '${_currentSettings.maxThreshold.toInt()} ${_currentSettings.unit}',
               activeColor: Colors.red[600],
               onChanged: (value) {
@@ -470,8 +490,261 @@ class _SettingsPageState extends State<SettingsPage> with SingleTickerProviderSt
                 });
               },
             ),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.red[300], size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Maximum threshold limited to 500+ PPM for safety',
+                      style: TextStyle(
+                        color: Colors.red[200],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
+    );
+  }
+
+  void _showManualThresholdDialog({required bool isMinimum}) {
+    final controller = TextEditingController(
+      text: isMinimum 
+          ? _currentSettings.minThreshold.toInt().toString()
+          : _currentSettings.maxThreshold.toInt().toString(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: GlassyContainer(
+          borderRadius: BorderRadius.circular(20),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isMinimum ? Icons.warning_amber_rounded : Icons.dangerous,
+                    color: isMinimum ? Colors.orange : Colors.red,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      isMinimum ? 'Set Minimum Threshold' : 'Set Maximum Threshold',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                isMinimum
+                    ? 'Enter warning threshold (10-500 PPM)'
+                    : 'Enter critical threshold (must be ≤500 PPM)',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  hintText: 'Enter value',
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                  suffixText: _currentSettings.unit.toUpperCase(),
+                  suffixStyle: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 16),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.1),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isMinimum ? Colors.orange : Colors.red,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (isMinimum ? Colors.orange : Colors.red).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: (isMinimum ? Colors.orange : Colors.red).withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: isMinimum ? Colors.orange[300] : Colors.red[300],
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Safety Guidelines',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isMinimum
+                          ? '• Recommended range: 30-100 PPM\n• Standard warning: 50 PPM\n• Must be less than maximum threshold'
+                          : '• Maximum allowed: 500 PPM\n• Recommended: 200-400 PPM\n• Standard critical: 200 PPM\n• Must be greater than minimum threshold',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final value = double.tryParse(controller.text);
+                        if (value == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a valid number'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (isMinimum) {
+                          if (value < 10 || value > 500) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Minimum threshold must be between 10-500 PPM'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          if (value >= _currentSettings.maxThreshold) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Minimum must be less than maximum threshold'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            _currentSettings = _currentSettings.copyWith(minThreshold: value);
+                          });
+                        } else {
+                          if (value > 500) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Maximum threshold cannot exceed 500 PPM'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          if (value <= _currentSettings.minThreshold) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Maximum must be greater than minimum threshold'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            _currentSettings = _currentSettings.copyWith(maxThreshold: value);
+                          });
+                        }
+
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${isMinimum ? "Minimum" : "Maximum"} threshold set to ${value.toInt()} PPM',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isMinimum ? Colors.orange : Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Set Threshold',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

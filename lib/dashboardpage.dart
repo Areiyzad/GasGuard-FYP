@@ -4,7 +4,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/glassy.dart';
 import 'services/settings_service.dart';
 import 'services/gas_data_service.dart';
+import 'services/sensor_service.dart';
+import 'services/habit_service.dart';
 import 'models/gas_reading_model.dart';
+import 'models/sensor_model.dart';
+import 'sensor_management_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -19,10 +23,15 @@ class _DashboardPageState extends State<DashboardPage>
   late AnimationController _glowController;
   final SettingsService _settingsService = SettingsService();
   final GasDataService _gasDataService = GasDataService();
+  final SensorService _sensorService = SensorService();
+  final HabitService _habitService = HabitService();
   
   GasReading? _currentReading;
+  List<Sensor> _sensors = [];
+  Map<String, double> _sensorReadings = {}; // sensor_id -> ppm value
   bool _windowVentilationActive = false;
   Timer? _dataUpdateTimer;
+  List<Map<String, dynamic>> _recentActivities = [];
 
   @override
   void initState() {
@@ -35,8 +44,10 @@ class _DashboardPageState extends State<DashboardPage>
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
+    _loadSensors();
     _initializeGasData();
     _startRealTimeMonitoring();
+    _loadRecentActivities();
   }
 
   @override
@@ -62,12 +73,78 @@ class _DashboardPageState extends State<DashboardPage>
           const SizedBox(height: 24),
           _buildStatusCard(),
           const SizedBox(height: 24),
+          if (_sensors.isNotEmpty) _buildSensorsSection(),
+          if (_sensors.isNotEmpty) const SizedBox(height: 24),
           _buildQuickStats(),
           const SizedBox(height: 24),
           _buildRecentActivity(),
         ],
       ),
     );
+  }
+
+  Future<void> _loadSensors() async {
+    final sensors = await _sensorService.getAllSensors();
+    if (!mounted) return;
+    setState(() {
+      _sensors = sensors;
+    });
+  }
+
+  Future<void> _loadRecentActivities() async {
+    try {
+      final activities = <Map<String, dynamic>>[];
+      
+      // Get today's habit completions
+      final today = DateTime.now();
+      final completions = await _habitService.getCompletionsForDate(today);
+      
+      // Check if all 5 daily habits were completed
+      final habits = await _habitService.getUserHabits();
+      final dailyHabits = habits.where((h) => h.category == 'daily').toList();
+      final completedToday = completions.length;
+      
+      if (completedToday == dailyHabits.length && dailyHabits.length == 5) {
+        activities.add({
+          'title': 'Daily Safety Habits Completed',
+          'time': _getTimeAgo(completions.first.completedAt),
+          'icon': Icons.check_circle,
+          'color': const Color(0xFF10B981),
+        });
+      } else if (completedToday > 0) {
+        activities.add({
+          'title': '$completedToday/${dailyHabits.length} Habits Completed',
+          'time': _getTimeAgo(completions.first.completedAt),
+          'icon': Icons.task_alt,
+          'color': const Color(0xFF3B82F6),
+        });
+      }
+      
+      // Add sensor activities
+      if (_currentReading != null) {
+        activities.add({
+          'title': 'System Check Completed',
+          'time': _getTimeAgo(_currentReading!.timestamp),
+          'icon': Icons.sensors,
+          'color': const Color(0xFF8B5CF6),
+        });
+      }
+      
+      // Add sensor calibration (mock - last hour)
+      activities.add({
+        'title': 'Sensor Calibrated',
+        'time': '1 hour ago',
+        'icon': Icons.settings,
+        'color': const Color(0xFF3B82F6),
+      });
+      
+      if (!mounted) return;
+      setState(() {
+        _recentActivities = activities;
+      });
+    } catch (e) {
+      print('Error loading recent activities: $e');
+    }
   }
 
   Future<void> _initializeGasData() async {
@@ -87,6 +164,13 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _updateGasData() async {
+    // Update all sensor readings
+    for (var sensor in _sensors) {
+      final reading = await _gasDataService.getCurrentReading(sensor.deviceId);
+      _sensorReadings[sensor.id] = reading.gasLevel;
+    }
+    
+    // Get default sensor reading
     final reading = await _gasDataService.getCurrentReading('SENSOR_001');
     if (!mounted) return;
     setState(() {
@@ -499,7 +583,11 @@ class _DashboardPageState extends State<DashboardPage>
                       color: Colors.white.withOpacity(0.3),
                     ),
                     Expanded(
-                      child: _buildStatusMetric('Sensors', '3/3', Icons.sensors),
+                      child: _buildStatusMetric(
+                        'Sensors', 
+                        '${_sensors.where((s) => s.isActive).length}/${_sensors.length}',
+                        Icons.sensors,
+                      ),
                     ),
                   ],
                 ),
@@ -533,6 +621,154 @@ class _DashboardPageState extends State<DashboardPage>
         ),
       ],
     );
+  }
+
+  Widget _buildSensorsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'My Sensors',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SensorManagementPage(),
+                  ),
+                ).then((_) => _loadSensors());
+              },
+              icon: const Icon(Icons.add_circle_outline, size: 18),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _sensors.length,
+          itemBuilder: (context, index) {
+            final sensor = _sensors[index];
+            final ppmValue = _sensorReadings[sensor.id] ?? 0.0;
+            final status = _getStatusForPPM(ppmValue);
+            final statusColor = _getColorForStatus(status);
+            
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: GlassyContainer(
+                borderRadius: BorderRadius.circular(16),
+                padding: const EdgeInsets.all(16),
+                tintColor: statusColor,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        sensor.isActive ? Icons.sensors : Icons.sensors_off,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sensor.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            sensor.deviceId,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${ppmValue.toStringAsFixed(1)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'PPM',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            status.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  String _getStatusForPPM(double ppm) {
+    if (ppm < 30) return 'safe';
+    if (ppm < 50) return 'warning';
+    return 'danger';
+  }
+
+  Color _getColorForStatus(String status) {
+    switch (status) {
+      case 'safe':
+        return const Color(0xFF10B981);
+      case 'warning':
+        return const Color(0xFFF59E0B);
+      case 'danger':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF3B82F6);
+    }
   }
 
   Widget _buildQuickStats() {
@@ -832,29 +1068,48 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Recent Activity',
-          style: Theme.of(context).textTheme.titleLarge,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Recent Activity',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 20),
+              onPressed: _loadRecentActivities,
+              tooltip: 'Refresh activities',
+              color: Colors.white70,
+            ),
+          ],
         ),
         const SizedBox(height: 20),
-        _buildActivityItem(
-          'System Check Completed',
-          '2 minutes ago',
-          Icons.check_circle,
-          const Color(0xFF10B981),
-        ),
-        _buildActivityItem(
-          'Sensor Calibrated',
-          '1 hour ago',
-          Icons.settings,
-          const Color(0xFF3B82F6),
-        ),
-        _buildActivityItem(
-          'Weekly Report Generated',
-          '1 day ago',
-          Icons.description,
-          const Color(0xFF8B5CF6),
-        ),
+        if (_recentActivities.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  Icon(Icons.history, size: 48, color: Colors.white.withOpacity(0.3)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No recent activities',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ...(_recentActivities.map((activity) => _buildActivityItem(
+            activity['title'] as String,
+            activity['time'] as String,
+            activity['icon'] as IconData,
+            activity['color'] as Color,
+          )).toList()),
       ],
     );
   }

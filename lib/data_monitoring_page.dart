@@ -291,35 +291,158 @@ class _DataMonitoringPageState extends State<DataMonitoringPage>
   }
 
   Widget _buildChartCard() {
+    final currentLevel = _currentReading?.gasLevel ?? 0.0;
+    final status = _getStatusForLevel(currentLevel);
+    final statusColor = _getColorForStatus(status);
+    
     return GlassyContainer(
-      borderRadius: BorderRadius.circular(16),
-      padding: const EdgeInsets.all(20),
+      borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Gas Levels Over Time',
+            'Gas Level Monitor',
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
+          // Circular speedometer
           SizedBox(
-            height: 200,
-            child: CustomPaint(
-              size: const Size(double.infinity, 200),
-              painter: ChartPainter(readings: _historicalReadings),
+            width: 280,
+            height: 280,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Animated circular progress
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: currentLevel / 100),
+                  duration: const Duration(milliseconds: 1500),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return CustomPaint(
+                      size: const Size(280, 280),
+                      painter: SpeedometerPainter(
+                        progress: value,
+                        color: statusColor,
+                      ),
+                    );
+                  },
+                ),
+                // Center content
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: currentLevel),
+                      duration: const Duration(milliseconds: 1500),
+                      builder: (context, value, _) {
+                        return Text(
+                          value.toStringAsFixed(0),
+                          style: TextStyle(
+                            fontSize: 64,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                            shadows: [
+                              Shadow(
+                                color: statusColor.withOpacity(0.5),
+                                blurRadius: 20,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    Text(
+                      'PPM',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
+          // Status indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: statusColor.withOpacity(0.5),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              status.toUpperCase(),
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Stats row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildChartLegend('Safe', const Color(0xFF10B981)),
-              _buildChartLegend('Warning', const Color(0xFFF59E0B)),
-              _buildChartLegend('Danger', const Color(0xFFEF4444)),
+              _buildStatItem(
+                Icons.download,
+                _statistics['avg_level'] != null 
+                    ? (_statistics['avg_level'] as double).toStringAsFixed(1)
+                    : '0',
+                'Average',
+                const Color(0xFF10B981),
+              ),
+              _buildStatItem(
+                Icons.upload,
+                _statistics['peak_level'] != null 
+                    ? (_statistics['peak_level'] as double).toStringAsFixed(1)
+                    : '0',
+                'Peak',
+                const Color(0xFFF59E0B),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Network quality style bottom stats
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildBottomStat(
+                _historicalReadings.length.toString(),
+                'Readings',
+                Icons.access_time,
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                color: Colors.white.withOpacity(0.2),
+              ),
+              _buildBottomStat(
+                status,
+                'Air Quality',
+                Icons.speed,
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                color: Colors.white.withOpacity(0.2),
+              ),
+              _buildBottomStat(
+                '${((1 - currentLevel / 100) * 100).toInt()}%',
+                'Safety',
+                Icons.security,
+              ),
             ],
           ),
         ],
@@ -327,25 +450,88 @@ class _DataMonitoringPageState extends State<DataMonitoringPage>
     );
   }
 
-  Widget _buildChartLegend(String label, Color color) {
-    return Row(
+  String _getStatusForLevel(double level) {
+    if (level < 30) return 'Safe';
+    if (level < 50) return 'Warning';
+    return 'Danger';
+  }
+
+  Color _getColorForStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'safe':
+        return const Color(0xFF10B981); // green
+      case 'warning':
+        return const Color(0xFFF59E0B); // yellow
+      case 'danger':
+        return const Color(0xFFEF4444); // red
+      default:
+        return const Color(0xFF10B981);
+    }
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
+    return Column(
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              ' PPM',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 6),
+        const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 11,
+          ),
         ),
       ],
     );
   }
+
+  Widget _buildBottomStat(String value, String label, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white.withOpacity(0.7), size: 18),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+
+
 
   Widget _buildSensorReadings() {
     return Column(
@@ -438,59 +624,81 @@ class _DataMonitoringPageState extends State<DataMonitoringPage>
   }
 }
 
-class ChartPainter extends CustomPainter {
-  final List<GasReading> readings;
+// Speedometer circular painter
+class SpeedometerPainter extends CustomPainter {
+  final double progress;
+  final Color color;
 
-  ChartPainter({required this.readings});
+  SpeedometerPainter({required this.progress, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (readings.isEmpty) {
-      return;
-    }
-
-    final paint = Paint()
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+    
+    // Background circle (track)
+    final trackPaint = Paint()
+      ..color = Colors.white.withOpacity(0.1)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = 20
       ..strokeCap = StrokeCap.round;
-
-    final gradient = LinearGradient(
-      colors: [
-        const Color(0xFF10B981),
-        const Color(0xFF3B82F6),
-      ],
+    
+    canvas.drawCircle(center, radius - 10, trackPaint);
+    
+    // Progress arc with glow effect
+    final progressPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          color.withOpacity(0.6),
+          color,
+          color.withOpacity(0.9),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 20
+      ..strokeCap = StrokeCap.round;
+    
+    // Draw main progress arc
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius - 10),
+      -math.pi / 2,  // Start from top
+      2 * math.pi * progress,
+      false,
+      progressPaint,
     );
-
-    paint.shader = gradient.createShader(
-      Rect.fromLTWH(0, 0, size.width, size.height),
+    
+    // Add glow effect
+    final glowPaint = Paint()
+      ..color = color.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 30
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+    
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius - 10),
+      -math.pi / 2,
+      2 * math.pi * progress,
+      false,
+      glowPaint,
     );
-
-    final path = Path();
-
-    final minLevel = readings.map((r) => r.gasLevel).reduce(math.min);
-    final maxLevel = readings.map((r) => r.gasLevel).reduce(math.max);
-    final range = (maxLevel - minLevel) == 0 ? 1 : (maxLevel - minLevel);
-
-    for (int i = 0; i < readings.length; i++) {
-      final x = (size.width / (readings.length - 1)) * i;
-      final normalized = (readings[i].gasLevel - minLevel) / range;
-      final y = size.height - (normalized * size.height * 0.9); // padding top
-
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    canvas.drawPath(path, paint);
+    
+    // Inner glow circle
+    final innerGlowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          color.withOpacity(0.4),
+          color.withOpacity(0.1),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.6, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius * 0.7));
+    
+    canvas.drawCircle(center, radius * 0.7, innerGlowPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    if (oldDelegate is ChartPainter) {
-      return oldDelegate.readings != readings;
-    }
-    return true;
+  bool shouldRepaint(covariant SpeedometerPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.color != color;
   }
 }
